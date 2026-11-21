@@ -101,8 +101,8 @@ private fun SupportLinks(
 
 """,
     }
-    marker = "@Composable\\nprivate fun SupportLinks("
-    end_marker = "@Composable\\nprivate fun InfoCard("
+    marker = "@Composable\nprivate fun SupportLinks("
+    end_marker = "@Composable\nprivate fun InfoCard("
     for path, replacement in replacements.items():
         source = path.read_text()
         if source.count(marker) != 1 or source.count(end_marker) != 1:
