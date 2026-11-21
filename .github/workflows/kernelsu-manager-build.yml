@@ -1,31 +1,8 @@
 name: Build branded upstream KernelSU Manager (experimental)
+run-name: Root Lab / ${{ github.event.client_payload.request_id }}
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'tools/brand_kernelsu.py'
-      - '.github/workflows/kernelsu-manager-build.yml'
-  workflow_dispatch:
-    inputs:
-      manager_name:
-        description: Manager display name
-        required: true
-        default: LORD H3X
-        type: string
-      package_name:
-        description: Android package name
-        required: true
-        default: com.lordh3x.manager
-        type: string
-      logo:
-        description: Select one of three built-in logos
-        required: true
-        default: hex
-        type: choice
-        options:
-          - hex
-          - bolt
-          - shield
+  repository_dispatch:
+    types: [rootlab-manager-build]
 permissions:
   contents: read
 jobs:
@@ -53,11 +30,32 @@ jobs:
       - name: Install Android SDK / NDK requirements
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;37.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
+      - name: Validate settings supplied by the Root Lab application
+        env:
+          MANAGER_NAME: ${{ github.event.client_payload.manager_name }}
+          PACKAGE_NAME: ${{ github.event.client_payload.package_name }}
+          LOGO: ${{ github.event.client_payload.logo }}
+          REQUEST_ID: ${{ github.event.client_payload.request_id }}
+        run: |
+          python3 - <<'PY'
+          import os, re, uuid
+          from pathlib import Path
+          name = os.environ["MANAGER_NAME"]
+          pkg = os.environ["PACKAGE_NAME"]
+          logo = os.environ["LOGO"]
+          uuid.UUID(os.environ["REQUEST_ID"])
+          if not 1 <= len(name.strip()) <= 40 or any(c in name for c in "\\r\\n<>"):
+              raise SystemExit("Invalid manager name")
+          if len(pkg) > 100 or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+", pkg):
+              raise SystemExit("Invalid package name")
+          if logo not in ("hex", "bolt", "shield"):
+              raise SystemExit("Invalid logo")
+          PY
       - name: Apply chosen brand to both original manager themes
         env:
-          MANAGER_NAME: ${{ inputs.manager_name || 'LORD H3X' }}
-          PACKAGE_NAME: ${{ inputs.package_name || 'com.lordh3x.manager' }}
-          LOGO: ${{ inputs.logo || 'hex' }}
+          MANAGER_NAME: ${{ github.event.client_payload.manager_name }}
+          PACKAGE_NAME: ${{ github.event.client_payload.package_name }}
+          LOGO: ${{ github.event.client_payload.logo }}
         run: |
           python3 tools/brand_kernelsu.py --upstream upstream --name "$MANAGER_NAME" --package "$PACKAGE_NAME" --logo "$LOGO"
           grep -Fq 'Built by LORD H3X' upstream/manager/app/src/main/java/me/weishu/kernelsu/ui/screen/home/HomeMaterial.kt
@@ -74,8 +72,8 @@ jobs:
           cp "$KSU_DAEMON" manager/app/src/main/jniLibs/arm64-v8a/libksud.so
       - name: Build original KernelSU Manager debug APK (not production-authorized)
         env:
-          MANAGER_NAME: ${{ inputs.manager_name || 'LORD H3X' }}
-          PACKAGE_NAME: ${{ inputs.package_name || 'com.lordh3x.manager' }}
+          MANAGER_NAME: ${{ github.event.client_payload.manager_name }}
+          PACKAGE_NAME: ${{ github.event.client_payload.package_name }}
         run: |
           cd upstream/manager
           chmod +x gradlew
