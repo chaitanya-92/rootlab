@@ -41,6 +41,78 @@ def logo_xml(choice):
             'android:viewportWidth="108" android:viewportHeight="108">\n'
             + "\n".join(body) + '\n</vector>\n')
 
+def patch_home_links(app):
+    """Replace Support Us / Learn KernelSU on BOTH upstream home UI themes.
+
+    Keep root verification/status, installation and module controls untouched.
+    Stop with an error instead of silently generating an incomplete manager if
+    upstream Home composable signatures change.
+    """
+    home = app / "src/main/java/me/weishu/kernelsu/ui/screen/home"
+    material = home / "HomeMaterial.kt"
+    miuix = home / "HomeMiuix.kt"
+    if not material.is_file() or not miuix.is_file():
+        raise ValueError("Missing upstream KernelSU home UI; cannot apply required branding")
+    replacements = {
+        material: """@Composable
+private fun SupportLinks(
+    onOpenUrl: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SegmentedColumn(modifier = modifier.fillMaxWidth()) {
+        item {
+            SegmentedListItem(
+                onClick = { onOpenUrl("https://t.me/Who_colki") },
+                headlineContent = { Text("Telegram: @Who_colki") },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
+            )
+        }
+        item {
+            Text("Built by LORD H3X")
+        }
+        item {
+            SegmentedListItem(
+                onClick = { onOpenUrl("https://github.com/chaitanya-92") },
+                headlineContent = { Text("GitHub: @chaitanya-92") },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
+            )
+        }
+    }
+}
+
+""",
+        miuix: """@Composable
+private fun SupportLinks(
+    onOpenUrl: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(modifier = modifier) {
+        ArrowPreference(
+            title = "Telegram: @Who_colki",
+            onClick = { onOpenUrl("https://t.me/Who_colki") },
+        )
+        Text("Built by LORD H3X")
+        ArrowPreference(
+            title = "GitHub: @chaitanya-92",
+            onClick = { onOpenUrl("https://github.com/chaitanya-92") },
+        )
+    }
+}
+
+""",
+    }
+    marker = "@Composable\\nprivate fun SupportLinks("
+    end_marker = "@Composable\\nprivate fun InfoCard("
+    for path, replacement in replacements.items():
+        source = path.read_text()
+        if source.count(marker) != 1 or source.count(end_marker) != 1:
+            raise ValueError(f"Cannot safely replace upstream SupportLinks in {path}")
+        start = source.index(marker)
+        end = source.index(end_marker, start)
+        source = source[:start] + replacement + source[end:]
+        path.write_text(source)
+
+
 def apply(upstream, name, package, logo):
     app = upstream / "manager" / "app"
     gradle = app / "build.gradle.kts"
@@ -63,6 +135,7 @@ def apply(upstream, name, package, logo):
     (res / "drawable").mkdir(parents=True, exist_ok=True)
     (res / "drawable/ic_launcher_foreground.xml").write_text(logo_xml(logo))
     (res / "drawable/ic_launcher_monochrome.xml").write_text(logo_xml(logo))
+    patch_home_links(app)
     # Use the official foreground in the adaptive launcher; nothing in the
     # engine's JNI or UID/authorization logic is modified by cosmetic branding.
     print(f"Branded upstream assets: name={name!r}; package={package}; logo={logo}")
