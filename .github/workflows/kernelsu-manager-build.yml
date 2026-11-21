@@ -1,5 +1,10 @@
 name: Build branded upstream KernelSU Manager (experimental)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/brand_kernelsu.py'
+      - '.github/workflows/kernelsu-manager-build.yml'
   workflow_dispatch:
     inputs:
       manager_name:
@@ -50,9 +55,9 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;37.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
       - name: Apply chosen brand to both original manager themes
         env:
-          MANAGER_NAME: ${{ inputs.manager_name }}
-          PACKAGE_NAME: ${{ inputs.package_name }}
-          LOGO: ${{ inputs.logo }}
+          MANAGER_NAME: ${{ inputs.manager_name || 'LORD H3X' }}
+          PACKAGE_NAME: ${{ inputs.package_name || 'com.lordh3x.manager' }}
+          LOGO: ${{ inputs.logo || 'hex' }}
         run: |
           python3 tools/brand_kernelsu.py --upstream upstream --name "$MANAGER_NAME" --package "$PACKAGE_NAME" --logo "$LOGO"
           grep -Fq 'Built by LORD H3X' upstream/manager/app/src/main/java/me/weishu/kernelsu/ui/screen/home/HomeMaterial.kt
@@ -69,8 +74,8 @@ jobs:
           cp "$KSU_DAEMON" manager/app/src/main/jniLibs/arm64-v8a/libksud.so
       - name: Build original KernelSU Manager debug APK (not production-authorized)
         env:
-          MANAGER_NAME: ${{ inputs.manager_name }}
-          PACKAGE_NAME: ${{ inputs.package_name }}
+          MANAGER_NAME: ${{ inputs.manager_name || 'LORD H3X' }}
+          PACKAGE_NAME: ${{ inputs.package_name || 'com.lordh3x.manager' }}
         run: |
           cd upstream/manager
           chmod +x gradlew
