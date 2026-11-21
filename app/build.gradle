@@ -1,5 +1,6 @@
 plugins { id 'com.android.application' }
 android {
+    buildFeatures { buildConfig true }
     namespace 'dev.rootlab.manager'
     compileSdk 35
     defaultConfig {
