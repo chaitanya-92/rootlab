@@ -58,18 +58,26 @@ unmodified upstream kernel. Verify the resulting signed APK's certificate with
 `apksigner verify --print-certs` and compare the actual DER certificate
 hash/size to the kernel build manifest.
 
+## One-click workflow (debug-only)
+
+GitHub Actions -> **Build branded upstream KernelSU Manager (experimental)** -> Run workflow:
+- Enter manager name (defaults to LORD H3X)
+- Enter custom application ID (defaults to com.lordh3x.manager)
+- Choose **hex**, **bolt**, or **shield**
+
+The workflow checks out pinned KernelSU commit `2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4`, patches both upstream UI themes and vector icons, compiles arm64 `ksud`, and attempts an original manager debug APK build.
+
+**Debug APK is NOT authorized to manage root by default.** Do not flash arbitrary kernel/LKM images.
+
 ## Unfinished, mandatory integration work
 
-- Real KernelSU manager has not been imported into this repository; the scripts
-  operate on a separate pinned upstream checkout.
+- Real KernelSU upstream is obtained as a pinned checkout by the experimental build workflow rather than copied or vendored into the rootlab repository.
 - No release-signing credentials are configured.
 - No native ksud or actual kernel/LKM artifact is built here.
 - No validated phone/device/partition combination is configured.
 - No flashing workflow; do not attempt a generic image across devices.
 - No real device test of root-status reporting, superuser policies, or modules.
-- The `Built by LORD H3X` links are present in the *standalone diagnostic*
-  app. The same exact layout must still be integrated into the real upstream
-  Kotlin/Compose UI before release.
+- The branding tool now patches BOTH upstream HomeMaterial.kt and HomeMiuix.kt so the real manager replaces Support Us / Learn KernelSU with Telegram, Built by LORD H3X, and GitHub. Actual upstream compilation and on-device rendering are still unverified.
 
 KernelSU is licensed under GPL obligations; preserve license notices and
 publish complete corresponding source for distributed modified binaries.
