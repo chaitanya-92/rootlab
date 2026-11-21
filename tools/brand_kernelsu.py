@@ -60,6 +60,7 @@ def apply(upstream, name, package, logo):
         if key not in gradle_text:
             raise ValueError(f"Upstream no longer supports {key}; re-audit before building")
     res = app / "src/main/res"
+    (res / "drawable").mkdir(parents=True, exist_ok=True)
     (res / "drawable/ic_launcher_foreground.xml").write_text(logo_xml(logo))
     (res / "drawable/ic_launcher_monochrome.xml").write_text(logo_xml(logo))
     # Use the official foreground in the adaptive launcher; nothing in the
