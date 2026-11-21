@@ -24,9 +24,24 @@ class BrandingTests(unittest.TestCase):
             kbuild = folder / "kernel/Kbuild"
             kbuild.parent.mkdir(parents=True)
             kbuild.write_text("KSU_PACKAGE_NAME")
+            home = folder / "manager/app/src/main/java/me/weishu/kernelsu/ui/screen/home"
+            home.mkdir(parents=True)
+            for theme in ("HomeMaterial.kt", "HomeMiuix.kt"):
+                (home / theme).write_text(
+                    "@Composable\\nprivate fun SupportLinks(\\n"
+                    "    onOpenUrl: (String) -> Unit,\\n"
+                    ") {\\n    Text(\"Support Us\")\\n    Text(\"Learn KernelSU\")\\n}\\n\\n"
+                    "@Composable\\nprivate fun InfoCard(\\n) {}\\n"
+                )
             for logo in LOGOS:
                 apply(folder, "LORD H3X", "com.lordh3x.manager", logo)
                 self.assertTrue((folder/"manager/app/src/main/res/drawable/ic_launcher_foreground.xml").is_file())
+                for theme in ("HomeMaterial.kt", "HomeMiuix.kt"):
+                    content = (home / theme).read_text()
+                    self.assertIn("Built by LORD H3X", content)
+                    self.assertIn("https://t.me/Who_colki", content)
+                    self.assertNotIn("Support Us", content)
+                    self.assertNotIn("Learn KernelSU", content)
 
     def test_identity_deterministic(self):
         # Not a real cert; validates deterministic formatted output only.
