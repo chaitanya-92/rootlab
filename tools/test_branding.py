@@ -28,10 +28,10 @@ class BrandingTests(unittest.TestCase):
             home.mkdir(parents=True)
             for theme in ("HomeMaterial.kt", "HomeMiuix.kt"):
                 (home / theme).write_text(
-                    "@Composable\\nprivate fun SupportLinks(\\n"
-                    "    onOpenUrl: (String) -> Unit,\\n"
-                    ") {\\n    Text(\"Support Us\")\\n    Text(\"Learn KernelSU\")\\n}\\n\\n"
-                    "@Composable\\nprivate fun InfoCard(\\n) {}\\n"
+                    "@Composable\nprivate fun SupportLinks(\n"
+                    "    onOpenUrl: (String) -> Unit,\n"
+                    ") {\n    Text(\"Support Us\")\n    Text(\"Learn KernelSU\")\n}\n\n"
+                    "@Composable\nprivate fun InfoCard(\n) {}\n"
                 )
             for logo in LOGOS:
                 apply(folder, "LORD H3X", "com.lordh3x.manager", logo)
