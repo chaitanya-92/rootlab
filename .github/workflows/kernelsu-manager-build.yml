@@ -1,0 +1,83 @@
+name: Build branded upstream KernelSU Manager (experimental)
+on:
+  workflow_dispatch:
+    inputs:
+      manager_name:
+        description: Manager display name
+        required: true
+        default: LORD H3X
+        type: string
+      package_name:
+        description: Android package name
+        required: true
+        default: com.lordh3x.manager
+        type: string
+      logo:
+        description: Select one of three built-in logos
+        required: true
+        default: hex
+        type: choice
+        options:
+          - hex
+          - bolt
+          - shield
+permissions:
+  contents: read
+jobs:
+  branded-manager:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out pinned original KernelSU manager / engine sources
+        uses: actions/checkout@v4
+        with:
+          repository: tiann/KernelSU
+          ref: 2a60b2893b8d0d885d1ceff2287d8ad854f0e0f4
+          path: upstream
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - name: Install Android SDK / NDK requirements
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;37.0.0" "ndk;29.0.14206865" "cmake;3.22.1"
+      - name: Apply chosen brand to both original manager themes
+        env:
+          MANAGER_NAME: ${{ inputs.manager_name }}
+          PACKAGE_NAME: ${{ inputs.package_name }}
+          LOGO: ${{ inputs.logo }}
+        run: |
+          python3 tools/brand_kernelsu.py --upstream upstream --name "$MANAGER_NAME" --package "$PACKAGE_NAME" --logo "$LOGO"
+          grep -Fq 'Built by LORD H3X' upstream/manager/app/src/main/java/me/weishu/kernelsu/ui/screen/home/HomeMaterial.kt
+          grep -Fq 'Built by LORD H3X' upstream/manager/app/src/main/java/me/weishu/kernelsu/ui/screen/home/HomeMiuix.kt
+      - name: Build original ksud for Android arm64
+        run: |
+          cargo install cargo-ndk --locked
+          cd upstream/userspace/ksud
+          cargo ndk -t arm64-v8a build --release
+          cd ../..
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          KSU_DAEMON="$(find . -path '*/aarch64-linux-android/release/ksud' -type f -print -quit)"
+          test -n "$KSU_DAEMON"
+          cp "$KSU_DAEMON" manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+      - name: Build original KernelSU Manager debug APK (not production-authorized)
+        env:
+          MANAGER_NAME: ${{ inputs.manager_name }}
+          PACKAGE_NAME: ${{ inputs.package_name }}
+        run: |
+          cd upstream/manager
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug -PKSU_NAME="$MANAGER_NAME" -PKSU_PACKAGE_NAME="$PACKAGE_NAME" --no-daemon
+      - name: Upload experimental manager APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernelsu-branded-debug-NOT-ROOT-AUTHORIZED
+          path: upstream/manager/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
