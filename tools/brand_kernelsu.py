@@ -105,6 +105,8 @@ private fun SupportLinks(
     end_marker = "@Composable\nprivate fun InfoCard("
     for path, replacement in replacements.items():
         source = path.read_text()
+        if "Built by LORD H3X" in source and "https://t.me/Who_colki" in source and "https://github.com/chaitanya-92" in source:
+            continue  # Safe idempotence for repeated logo builds in one checkout.
         if source.count(marker) != 1 or source.count(end_marker) != 1:
             raise ValueError(f"Cannot safely replace upstream SupportLinks in {path}")
         start = source.index(marker)
