@@ -1,6 +1,8 @@
 package dev.rootlab.manager;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.graphics.Typeface;
 import android.view.View;
@@ -47,7 +49,23 @@ public class MainActivity extends Activity {
             addText(root, backend.displayName() + " — " + backend.readiness().name(), 14);
         }
         addText(root, "\nImportant: generic root verification does NOT enable superuser policy management, modules, kernel installation, or support for every device. Backend-specific authenticated APIs and device-tested installation paths are required.", 14);
+        addText(root, "\\nConnect with the developer", 18);
+        addExternalLink(root, "Telegram: @Who_colki", "https://t.me/Who_colki");
+        addExternalLink(root, "GitHub: @chaitanya-92", "https://github.com/chaitanya-92");
         setContentView(scroll);
+    }
+    private void addExternalLink(LinearLayout parent, String label, String url) {
+        Button link = new Button(this);
+        link.setText(label);
+        parent.addView(link);
+        link.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            try {
+                startActivity(intent);
+            } catch (android.content.ActivityNotFoundException ignored) {
+                android.widget.Toast.makeText(this, "No app available to open link", android.widget.Toast.LENGTH_LONG).show();
+            }
+        });
     }
     private TextView addText(LinearLayout parent, String value, int size) {
         TextView t = new TextView(this);
